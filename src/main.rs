@@ -64,11 +64,13 @@ fn main() -> anyhow::Result<()> {
             if cli.output_dir {
                 args.push(new_path);
             } else {
-                args.push(title);
+                args.push(title.clone());
             }
 
             let output = Command::new("/usr/bin/ffmpeg").args(args).output()?;
-            println!("{}", String::from_utf8_lossy(&output.stdout));
+            if !output.status.success() {
+                eprintln!("Could not write track {title}.");
+            }
         }
     }
 
