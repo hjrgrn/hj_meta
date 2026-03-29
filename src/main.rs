@@ -4,10 +4,22 @@
 
 #![warn(missing_docs)]
 
+use std::fs::create_dir;
+
 use clap::Parser;
 
-fn main() {
-    let _ = Cli::parse();
+const OUTPUT_DIR: &str = "./output";
+
+fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
+    if !cli.output_dir {
+        return Err(anyhow::anyhow!("Unimplemented."));
+    }
+
+    create_dir(OUTPUT_DIR)?;
+
+    Ok(())
 }
 
 #[derive(Parser)]
@@ -17,4 +29,7 @@ fn main() {
 struct Cli {
     #[arg(short, long, default_value = "true")]
     track_number: bool,
+
+    #[arg(short, long, default_value = "true")]
+    output_dir: bool,
 }
