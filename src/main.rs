@@ -1,4 +1,5 @@
-//! A script that allows you to add metadata to music media files.
+//! A simple wrapper around [ffmpeg](https://trac.ffmpeg.org/) that allows you to add metadata to
+//! music media files.
 //!
 //! TODO: usage
 
@@ -22,19 +23,10 @@ fn main() -> anyhow::Result<()> {
     }
 
     // TODO: configurable fields
-    // TODO: duplication, maybe a struct
-    print!("Author: ");
-    io::stdout().flush().map_err(|e| anyhow::anyhow!(e))?;
-    let mut author = String::new();
-    io::stdin().read_line(&mut author)?;
-    print!("Album: ");
-    io::stdout().flush().map_err(|e| anyhow::anyhow!(e))?;
-    let mut album = String::new();
-    io::stdin().read_line(&mut album)?;
-    print!("Genre: ");
-    io::stdout().flush().map_err(|e| anyhow::anyhow!(e))?;
-    let mut genre = String::new();
-    io::stdin().read_line(&mut genre)?;
+    let mut metadata = Vec::new();
+    metadata.push(Metadata::prompt("author")?);
+    metadata.push(Metadata::prompt("album")?);
+    metadata.push(Metadata::prompt("genre")?);
 
     create_dir(OUTPUT_DIR)?;
 
@@ -61,28 +53,20 @@ fn main() -> anyhow::Result<()> {
             args.push("-y".to_string());
             args.push("-c".to_string());
             args.push("copy".to_string());
-            args.push("-metadata".to_string());
-            args.push(format!("title={title}"));
-            // TODO: duplication, maybe useless memcopy
-            if !author.is_empty() {
-                args.push("-metadata".to_string());
-                args.push(format!("author={author}"));
+
+            for entry in metadata.iter() {
+                entry.add_to_args(&mut args);
             }
-            if !album.is_empty() {
-                args.push("-metadata".to_string());
-                args.push(format!("album={album}"));
-            }
-            if !genre.is_empty() {
-                args.push("-metadata".to_string());
-                args.push(format!("genre={genre}"));
-            }
+
+            let title_metadata = Metadata::new("title", &title);
+            title_metadata.add_to_args(&mut args);
+
             if cli.output_dir {
                 args.push(new_path);
             } else {
                 args.push(title);
             }
 
-            // FROMHERE: command
             let output = Command::new("/usr/bin/ffmpeg").args(args).output()?;
             println!("{}", String::from_utf8_lossy(&output.stdout));
         }
@@ -94,6 +78,7 @@ fn main() -> anyhow::Result<()> {
 #[derive(Parser)]
 #[command(name = "HJMeta")]
 #[command(author = "hjrgrn <187955624+hjrgrn@users.noreply.github.com>")]
+// TODO:
 #[command(about = "TODO", long_about = None)]
 struct Cli {
     #[arg(short, long, default_value = "true")]
@@ -101,4 +86,40 @@ struct Cli {
 
     #[arg(short, long, default_value = "true")]
     output_dir: bool,
+}
+
+// Struct that represents a metadata that can be added to the `ffmpeg` command.
+struct Metadata {
+    // Key of the metadata.
+    key: String,
+    // Value of the metadata
+    value: String,
+}
+
+impl Metadata {
+    // Build a new instance given the field and the data.
+    fn new(field: &str, data: &str) -> Self {
+        Self {
+            key: field.to_string(),
+            value: data.to_string(),
+        }
+    }
+
+    // Build a new instance by prompting the user for the data.
+    fn prompt(s: &str) -> anyhow::Result<Self> {
+        let key = s.to_string();
+        print!("{key}: ");
+        io::stdout().flush().map_err(|e| anyhow::anyhow!(e))?;
+        let mut value = String::new();
+        io::stdin().read_line(&mut value)?;
+        Ok(Self { key, value })
+    }
+
+    // Add the correct CLI arguments to a vector of CLI arguments.
+    fn add_to_args(&self, args: &mut Vec<String>) {
+        if !self.value.is_empty() {
+            args.push("-metadata".to_string());
+            args.push(format!("{}={}", self.key, self.value));
+        }
+    }
 }
