@@ -19,10 +19,11 @@ pub fn meta(_: bool, output_dir: bool) -> anyhow::Result<()> {
     }
 
     // TODO: configurable fields
-    let mut metadata = Vec::new();
-    metadata.push(Metadata::prompt("author")?);
-    metadata.push(Metadata::prompt("album")?);
-    metadata.push(Metadata::prompt("genre")?);
+    let metadata = [
+        Metadata::prompt("author")?,
+        Metadata::prompt("album")?,
+        Metadata::prompt("genre")?,
+    ];
 
     create_dir(OUTPUT_DIR)?;
 
@@ -36,19 +37,19 @@ pub fn meta(_: bool, output_dir: bool) -> anyhow::Result<()> {
                 .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))?;
             let title = old_path.replace(":", "_");
             // TODO: fix this when implementing output_dir
-            let new_path;
-            if output_dir {
-                new_path = format!("{}{}", OUTPUT_DIR, title);
+            let new_path = if output_dir {
+                format!("{}{}", OUTPUT_DIR, title)
             } else {
                 return Err(anyhow::anyhow!("Unimplemented."));
-            }
+            };
 
-            let mut args = Vec::new();
-            args.push("-i".to_string());
-            args.push(old_path);
-            args.push("-y".to_string());
-            args.push("-c".to_string());
-            args.push("copy".to_string());
+            let mut args = vec![
+                "-i".to_string(),
+                old_path,
+                "-y".to_string(),
+                "-c".to_string(),
+                "copy".to_string(),
+            ];
 
             for entry in metadata.iter() {
                 entry.add_to_args(&mut args);
