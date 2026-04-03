@@ -1,3 +1,8 @@
+//! # meta subcommand
+//!
+//! Add metadata to an album.
+// TODO:
+
 use anyhow;
 
 use std::{

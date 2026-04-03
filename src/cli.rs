@@ -1,3 +1,5 @@
+//! Cli
+
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -13,6 +15,9 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 pub enum Cmd {
     /// Add metadata to an album.
+    ///
+    /// An album is supporsed to be a directory containing just the audio track of the album.
+    // TODO:
     Meta {
         #[arg(short, long, default_value = "true")]
         track_number: bool,
