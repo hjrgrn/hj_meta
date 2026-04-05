@@ -15,10 +15,8 @@ use clap::Parser;
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::Meta {
-            track_number,
-            output_dir,
-        } => meta(track_number, output_dir),
+        Cmd::Meta(args) => meta(&args),
+
         Cmd::Split => Err(anyhow::anyhow!("Unimplemented")),
     }
 }

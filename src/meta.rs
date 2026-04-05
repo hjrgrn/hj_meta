@@ -11,21 +11,25 @@ use std::{
     process::Command,
 };
 
-const OUTPUT_DIR: &str = "./output/";
+use crate::cli::MetaArgs;
 
-pub fn meta(_: bool, output_dir: bool) -> anyhow::Result<()> {
-    if !output_dir {
+pub fn meta(meta_args: &MetaArgs) -> anyhow::Result<()> {
+    // TODO: fix this when implementing output_dir
+    let output_dir: String = if let Some(od) = &meta_args.output_dir {
+        od.clone()
+    } else {
         return Err(anyhow::anyhow!("Unimplemented."));
-    }
+    };
 
     // TODO: configurable fields
+    // TODO: this will be passed as an argument to `meta`
     let metadata = [
         Metadata::prompt("author")?,
         Metadata::prompt("album")?,
         Metadata::prompt("genre")?,
     ];
 
-    create_dir(OUTPUT_DIR)?;
+    create_dir(output_dir)?;
 
     for entry in read_dir(".")? {
         // TODO: track number
@@ -37,8 +41,8 @@ pub fn meta(_: bool, output_dir: bool) -> anyhow::Result<()> {
                 .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))?;
             let title = old_path.replace(":", "_");
             // TODO: fix this when implementing output_dir
-            let new_path = if output_dir {
-                format!("{}{}", OUTPUT_DIR, title)
+            let new_path = if let Some(od) = &meta_args.output_dir {
+                format!("{}{}", od, title)
             } else {
                 return Err(anyhow::anyhow!("Unimplemented."));
             };
@@ -58,7 +62,8 @@ pub fn meta(_: bool, output_dir: bool) -> anyhow::Result<()> {
             let title_metadata = Metadata::new("title", &title);
             title_metadata.add_to_args(&mut args);
 
-            if output_dir {
+            // TODO: fix this when implementing output_dir
+            if meta_args.output_dir.is_some() {
                 args.push(new_path);
             } else {
                 args.push(title.clone());
