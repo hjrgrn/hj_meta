@@ -4,9 +4,10 @@
 // TODO:
 
 use anyhow;
+use tempfile::TempDir;
 
 use std::{
-    fs::{create_dir, read_dir},
+    fs::{self, create_dir, read_dir},
     io::{self, Write},
     process::Command,
 };
@@ -15,10 +16,24 @@ use crate::cli::MetaArgs;
 
 pub fn meta(meta_args: &MetaArgs) -> anyhow::Result<()> {
     // TODO: fix this when implementing output_dir
+    /// NOTE: Although this variable is not used directly, it must be retained to
+    /// prevent the temporary directory from being dropped prematurely.
+    #[allow(unused)]
+    let tempdir: Option<TempDir>;
+    #[allow(unused)]
     let output_dir: String = if let Some(od) = &meta_args.output_dir {
-        od.clone()
+        tempdir = None;
+        // TODO: maybe something more elegant
+        format!("./{od}/")
     } else {
-        return Err(anyhow::anyhow!("Unimplemented."));
+        let td = TempDir::new()?;
+        let td_path = td
+            .path()
+            .to_str()
+            .ok_or(anyhow::anyhow!("Invalid UTF-8 encountered."))?
+            .to_string();
+        tempdir = Some(td);
+        td_path
     };
 
     // TODO: configurable fields
@@ -29,7 +44,9 @@ pub fn meta(meta_args: &MetaArgs) -> anyhow::Result<()> {
         Metadata::prompt("genre")?,
     ];
 
-    create_dir(output_dir)?;
+    if tempdir.is_none() {
+        create_dir(&output_dir)?;
+    }
 
     for entry in read_dir(".")? {
         // TODO: track number
@@ -41,15 +58,11 @@ pub fn meta(meta_args: &MetaArgs) -> anyhow::Result<()> {
                 .map_err(|e| anyhow::anyhow!(format!("{:?}", e)))?;
             let title = old_path.replace(":", "_");
             // TODO: fix this when implementing output_dir
-            let new_path = if let Some(od) = &meta_args.output_dir {
-                format!("{}{}", od, title)
-            } else {
-                return Err(anyhow::anyhow!("Unimplemented."));
-            };
+            let new_path = format!("{}{}", &output_dir, title);
 
             let mut args = vec![
                 "-i".to_string(),
-                old_path,
+                old_path.clone(),
                 "-y".to_string(),
                 "-c".to_string(),
                 "copy".to_string(),
@@ -62,16 +75,16 @@ pub fn meta(meta_args: &MetaArgs) -> anyhow::Result<()> {
             let title_metadata = Metadata::new("title", &title);
             title_metadata.add_to_args(&mut args);
 
-            // TODO: fix this when implementing output_dir
-            if meta_args.output_dir.is_some() {
-                args.push(new_path);
-            } else {
-                args.push(title.clone());
-            }
+            args.push(new_path.clone());
 
             let output = Command::new("/usr/bin/ffmpeg").args(args).output()?;
             if !output.status.success() {
                 eprintln!("Could not write track {title}.");
+            }
+            if tempdir.is_some() {
+                if fs::copy(new_path, old_path).is_err() {
+                    eprintln!("Could not write track {title}.");
+                }
             }
         }
     }

@@ -28,6 +28,6 @@ pub struct MetaArgs {
     #[arg(short, long, default_value = "true")]
     pub track_number: bool,
 
-    #[arg(short, long, default_value = "./output/")]
+    #[arg(short, long)]
     pub output_dir: Option<String>,
 }
