@@ -17,6 +17,6 @@ fn main() -> anyhow::Result<()> {
     match cli.cmd {
         Cmd::Meta(args) => meta(&args),
 
-        Cmd::Split => Err(anyhow::anyhow!("Unimplemented")),
+        Cmd::Split(_) => Err(anyhow::anyhow!("Unimplemented")),
     }
 }
