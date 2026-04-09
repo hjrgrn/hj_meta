@@ -60,4 +60,7 @@ pub struct MetaArgs {
 pub struct SplitArgs {
     #[arg(short, long)]
     pub track_path: PathBuf,
+
+    #[arg(short, long)]
+    pub source_file: PathBuf,
 }
