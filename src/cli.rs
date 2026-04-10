@@ -63,4 +63,8 @@ pub struct SplitArgs {
 
     #[arg(short, long)]
     pub source_file: PathBuf,
+
+    // TODO: maybe change this and the other output_dir
+    #[arg(short, long, default_value = "./output_dir/")]
+    pub output_dir: PathBuf,
 }

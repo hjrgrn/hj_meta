@@ -6,9 +6,10 @@
 #![warn(missing_docs)]
 
 use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-    path::Path,
+    fs::{File, create_dir},
+    io::{self, BufRead, BufReader},
+    path::{Path, PathBuf},
+    process::{Command, Output},
 };
 
 use hj_meta::{
@@ -27,16 +28,26 @@ fn main() -> anyhow::Result<()> {
         Cmd::Split(args) => {
             let buffer = BufReader::new(File::open(&args.track_path)?);
             let mut tracks = Vec::new();
+
+            let rgx = Regex::new(r"^.+(?<ext>\..+)$")?;
+            let ext = rgx
+                .captures_iter(
+                    &args
+                        .source_file
+                        .to_str()
+                        .ok_or_else(|| anyhow::anyhow!("TODO:"))?,
+                )
+                .find_map(|caps| Some(caps.name("ext")?.as_str().to_string()))
+                .ok_or_else(|| anyhow::anyhow!("TODO"))?;
+
+            create_dir(&args.output_dir)?;
+
             for line in buffer.lines() {
-                let track = Track::build(&line?, &args.source_file)?;
+                let track = Track::build(&line?, &args.source_file, args.output_dir.clone(), &ext)?;
                 tracks.push(track);
             }
-
             for track in tracks {
-                println!(
-                    "{}\n{}\n{}\n{}\n",
-                    track.offset, track.title, track.output_dir, track.source_file
-                );
+                track.command()?;
             }
 
             Ok(())
@@ -48,15 +59,23 @@ pub struct Track {
     nose: String,
     tail: String,
     title: String,
-    output_dir: String,
+    // TODO: `String` or `PathBuf`
+    output_dir: PathBuf,
     source_file: String,
+    ext: String,
 }
 
 impl Track {
-    pub fn build(line: &str, source_file: &impl AsRef<Path>) -> anyhow::Result<Track> {
+    // TODO: `&impl AsRef<Path>` or `PathBuf`
+    pub fn build(
+        line: &str,
+        source_file: &impl AsRef<Path>,
+        output_dir: PathBuf,
+        ext: &str,
+    ) -> anyhow::Result<Track> {
         // TODO: make rgx global?
         let rgx = Regex::new(
-            r"^\s*(?<nose>([0-1][0-9]|[2][0-3]:)?([0-5][0-9]:)?[0-5][0-9]\s*.{1}\s*(?<tail>[0-1][0-9]|[2][0-3]:)?([0-5][0-9]:)?[0-5][0-9])\s*.{1}\s*(?<title>.+)\s*$",
+            r"^\s*((?<nose>([0-1][0-9]|[2][0-3]:)?([0-5][0-9]:)?[0-5][0-9])\s*.{1}\s*(?<tail>([0-1][0-9]|[2][0-3]:)?([0-5][0-9]:)?[0-5][0-9]))\s*.{1}\s*(?<title>.+)\s*$",
         )?;
         let (nose, tail, title) = rgx
             .captures_iter(&line)
@@ -69,30 +88,35 @@ impl Track {
             })
             // TODO:
             .ok_or_else(|| anyhow::anyhow!("TODO: "))?;
+
         Ok(Track {
             nose,
             tail,
             title,
-            // TODO: make it configurable
-            output_dir: "./output/".to_string(),
+            output_dir,
             source_file: source_file.as_ref().to_string_lossy().into(),
+            ext: ext.to_string(),
         })
     }
 
-    pub fn command(&self) {
-        // '/usr/bin/ffmpeg',
-        // # '-nostdin',
-        // '-y',
-        // # 'loglevel',
-        // # '8',
-        // '-i',
-        // to_be_splitted,
-        // '-ss',
-        // track['time 0'],
-        // '-to',
-        // track['time 1'],
-        // # '-vn',
-        // '-c',
-        // 'copy',
+    pub fn command(&self) -> io::Result<Output> {
+        Command::new("/usr/bin/ffmpeg")
+            .args([
+                "-y",
+                "-i",
+                &self.source_file,
+                "-ss",
+                &self.nose,
+                "-to",
+                &self.tail,
+                "-c",
+                "copy",
+                &self
+                    .output_dir
+                    .join(&format!("{}{}", self.title, self.ext))
+                    .to_string_lossy()
+                    .to_string(),
+            ])
+            .output()
     }
 }
