@@ -1,5 +1,7 @@
 //! CLI related utils.
 
+use std::path::PathBuf;
+
 use clap::{Args, Parser, Subcommand};
 
 /// CLI.
@@ -31,7 +33,7 @@ pub enum Cmd {
     Meta(MetaArgs),
 
     // TODO:
-    Split,
+    Split(SplitArgs),
 }
 
 /// CLI Arguments that can be passed to the `meta` subcommand.
@@ -51,4 +53,18 @@ pub struct MetaArgs {
     /// If this flag is not provided, the original files will be deleted.
     #[arg(short, long)]
     pub output_dir: Option<String>,
+}
+
+/// TODO: comment
+#[derive(Debug, Args)]
+pub struct SplitArgs {
+    #[arg(short, long)]
+    pub track_path: PathBuf,
+
+    #[arg(short, long)]
+    pub source_file: PathBuf,
+
+    // TODO: maybe change this and the other output_dir
+    #[arg(short, long, default_value = "./output_dir/")]
+    pub output_dir: PathBuf,
 }

@@ -13,4 +13,5 @@ name = "hj_meta"
 [dependencies]
 anyhow = "1.0.100"
 clap = { version = "4.6.0", features = ["derive"] }
+regex = "1.12.3"
 tempfile = "3.27.0"
