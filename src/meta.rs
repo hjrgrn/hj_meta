@@ -146,11 +146,11 @@ fn run_cmd(
     Ok(())
 }
 
-/// Prompt the user for the metadata "author", "album" and "genre".
+/// Prompt the user for the metadata "artist", "album" and "genre".
 // TODO: configurable fields from the CLI
 pub fn gather_metadata_from_user() -> anyhow::Result<[Metadata; 3]> {
     Ok([
-        Metadata::prompt("author")?,
+        Metadata::prompt("artist")?,
         Metadata::prompt("album")?,
         Metadata::prompt("genre")?,
     ])
