@@ -18,6 +18,7 @@ pub struct Cli {
 /// Subcommands.
 #[derive(Debug, Subcommand)]
 pub enum Cmd {
+    // TODO: the comment don't show up well with clap, needs rework.
     /// # `meta` subcommand
     ///
     /// Adds metadata to an album.
