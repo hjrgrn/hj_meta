@@ -38,7 +38,7 @@ use crate::{
 };
 
 pub fn split(args: &SplitArgs) -> anyhow::Result<()> {
-    let buffer = BufReader::new(File::open(&args.track_path)?);
+    let buffer = BufReader::new(File::open(&args.tracklist_path)?);
     let mut tracks = Vec::new();
 
     let rgx = Regex::new(r"^.+(?<ext>\..+)$")?;
