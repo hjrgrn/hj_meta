@@ -23,6 +23,7 @@
 //! ```
 
 use std::{
+    env::set_current_dir,
     fs::{File, create_dir},
     io::{self, BufRead, BufReader},
     path::{Path, PathBuf},
@@ -31,7 +32,10 @@ use std::{
 
 use regex::Regex;
 
-use crate::cli::SplitArgs;
+use crate::{
+    cli::{MetaArgs, SplitArgs},
+    meta::meta,
+};
 
 pub fn split(args: &SplitArgs) -> anyhow::Result<()> {
     let buffer = BufReader::new(File::open(&args.track_path)?);
@@ -64,6 +68,15 @@ pub fn split(args: &SplitArgs) -> anyhow::Result<()> {
     }
     for track in tracks {
         track.command()?;
+    }
+
+    if args.metadata {
+        set_current_dir(&args.output_dir)?;
+        let meta_args = MetaArgs {
+            track_number: true,
+            output_dir: None,
+        };
+        meta(&meta_args)?;
     }
 
     Ok(())
