@@ -23,6 +23,7 @@
 //! ```
 
 use std::{
+    env::set_current_dir,
     fs::{File, create_dir},
     io::{self, BufRead, BufReader},
     path::{Path, PathBuf},
@@ -31,10 +32,13 @@ use std::{
 
 use regex::Regex;
 
-use crate::cli::SplitArgs;
+use crate::{
+    cli::{MetaArgs, SplitArgs},
+    meta::meta,
+};
 
 pub fn split(args: &SplitArgs) -> anyhow::Result<()> {
-    let buffer = BufReader::new(File::open(&args.track_path)?);
+    let buffer = BufReader::new(File::open(&args.tracklist_path)?);
     let mut tracks = Vec::new();
 
     let rgx = Regex::new(r"^.+(?<ext>\..+)$")?;
@@ -50,12 +54,29 @@ pub fn split(args: &SplitArgs) -> anyhow::Result<()> {
 
     create_dir(&args.output_dir)?;
 
+    let mut track_number = 1;
     for line in buffer.lines() {
-        let track = Track::build(&line?, &args.source_file, args.output_dir.clone(), &ext)?;
+        let track = Track::build(
+            &line?,
+            &args.source_file,
+            args.output_dir.clone(),
+            &ext,
+            track_number,
+        )?;
         tracks.push(track);
+        track_number += 1;
     }
     for track in tracks {
         track.command()?;
+    }
+
+    if args.metadata {
+        set_current_dir(&args.output_dir)?;
+        let meta_args = MetaArgs {
+            track_number: true,
+            output_dir: None,
+        };
+        meta(&meta_args)?;
     }
 
     Ok(())
@@ -76,6 +97,8 @@ pub struct Track {
     source_file: String,
     /// Extension of the track.
     ext: String,
+    /// Index of the track inside the album.
+    track_number: u8,
 }
 
 impl Track {
@@ -86,6 +109,7 @@ impl Track {
         source_file: &impl AsRef<Path>,
         output_dir: PathBuf,
         ext: &str,
+        track_number: u8,
     ) -> anyhow::Result<Track> {
         // TODO: make rgx global?
         let rgx = Regex::new(
@@ -110,11 +134,17 @@ impl Track {
             output_dir,
             source_file: source_file.as_ref().to_string_lossy().into(),
             ext: ext.to_string(),
+            track_number,
         })
     }
 
     /// Build the `ffmpeg` command that will be called.
     pub fn command(&self) -> io::Result<Output> {
+        let track_number = if self.track_number < 10 {
+            format!("0{}_", self.track_number)
+        } else {
+            format!("{}_", self.track_number)
+        };
         Command::new("/usr/bin/ffmpeg")
             .args([
                 "-y",
@@ -128,7 +158,7 @@ impl Track {
                 "copy",
                 &self
                     .output_dir
-                    .join(&format!("{}{}", self.title, self.ext))
+                    .join(&format!("{}{}{}", track_number, self.title, self.ext))
                     .to_string_lossy()
                     .to_string(),
             ])

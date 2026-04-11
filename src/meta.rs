@@ -25,18 +25,13 @@ use crate::cli::MetaArgs;
 
 /// `meta` subcommand.
 pub fn meta(meta_args: &MetaArgs) -> anyhow::Result<()> {
-    // TODO: configurable fields
-    // TODO: this will be passed as an argument to `meta`
-    let metadata = [
-        Metadata::prompt("author")?,
-        Metadata::prompt("album")?,
-        Metadata::prompt("genre")?,
-    ];
+    let metadata = gather_metadata_from_user()?;
 
     add_metadata(meta_args, &metadata)
 }
 
 /// Struct that represents a metadata that can be added to the `ffmpeg` command.
+#[derive(Debug, Clone)]
 pub struct Metadata {
     /// Key of the metadata.
     key: String,
@@ -64,7 +59,7 @@ impl Metadata {
     }
 
     /// Add the correct CLI arguments to a vector of CLI arguments.
-    fn add_to_args(&self, args: &mut Vec<String>) {
+    pub fn add_to_args(&self, args: &mut Vec<String>) {
         if !self.value.is_empty() {
             args.push("-metadata".to_string());
             args.push(format!("{}={}", self.key, self.value));
@@ -149,4 +144,14 @@ fn run_cmd(
         }
     }
     Ok(())
+}
+
+/// Prompt the user for the metadata "artist", "album" and "genre".
+// TODO: configurable fields from the CLI
+pub fn gather_metadata_from_user() -> anyhow::Result<[Metadata; 3]> {
+    Ok([
+        Metadata::prompt("artist")?,
+        Metadata::prompt("album")?,
+        Metadata::prompt("genre")?,
+    ])
 }
