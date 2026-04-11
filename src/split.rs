@@ -1,3 +1,27 @@
+//! # `split` subcommand
+//!
+//! Split a "full album" file into multiple tracks.
+//! A track list with each track's offset must be provided, and it must follow this format:
+//! ```text
+//! # tracklist.txt
+//!
+//! 00:00-02:38 - Oubliette
+//! 02:38-07:09 - Requiem
+//! 07:09-12:40 - Inhert
+//! 12:40-16:48 - Disfigured
+//! 16:48-20:48 - Multitude
+//! 20:48-25:07 - Ruins
+//! 25:07-29:16 - March
+//! 29:16-33:00 - Abattoir
+//! 33:00-36:30 - Feral
+//! 36:30-41:45 - Excalibur
+//! ```
+//!
+//! The name of the original file must be provided with its extension. For example:
+//! ```text
+//! Dan Terminus - Last Call For All Passengers.m4a
+//! ```
+
 use std::{
     fs::{File, create_dir},
     io::{self, BufRead, BufReader},
@@ -37,17 +61,25 @@ pub fn split(args: &SplitArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// A track that will be obtained from the original file.
 pub struct Track {
+    /// Beginning of the track.
     nose: String,
+    /// End of the track.
     tail: String,
+    /// Title.
     title: String,
+    /// Directory where the track will be saved.
     // TODO: `String` or `PathBuf`
     output_dir: PathBuf,
+    /// Original file that will be splitted.
     source_file: String,
+    /// Extension of the track.
     ext: String,
 }
 
 impl Track {
+    /// Build a track.
     // TODO: `&impl AsRef<Path>` or `PathBuf`
     pub fn build(
         line: &str,
@@ -81,6 +113,7 @@ impl Track {
         })
     }
 
+    /// Build the `ffmpeg` command that will be called.
     pub fn command(&self) -> io::Result<Output> {
         Command::new("/usr/bin/ffmpeg")
             .args([
