@@ -43,8 +43,8 @@ impl Metadata {
     /// Build a new instance given the field and the data.
     pub fn new(field: &str, data: &str) -> Self {
         Self {
-            key: field.to_string(),
-            value: data.to_string(),
+            key: field.trim().to_string(),
+            value: data.trim().to_string(),
         }
     }
 
