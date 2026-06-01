@@ -43,8 +43,8 @@ impl Metadata {
     /// Build a new instance given the field and the data.
     pub fn new(field: &str, data: &str) -> Self {
         Self {
-            key: field.trim().to_string(),
-            value: data.trim().to_string(),
+            key: field.to_string(),
+            value: data.to_string(),
         }
     }
 
@@ -62,7 +62,7 @@ impl Metadata {
     pub fn add_to_args(&self, args: &mut Vec<String>) {
         if !self.value.is_empty() {
             args.push("-metadata".to_string());
-            args.push(format!("{}={}", self.key, self.value));
+            args.push(format!("{}={}", self.key.trim(), self.value.trim()));
         }
     }
 }
