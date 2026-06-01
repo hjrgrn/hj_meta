@@ -50,11 +50,12 @@ impl Metadata {
 
     /// Build a new instance by prompting the user for the data.
     pub fn prompt(s: &str) -> anyhow::Result<Self> {
-        let key = s.to_string();
+        let key = s.trim().to_string();
         print!("{key}: ");
         io::stdout().flush().map_err(|e| anyhow::anyhow!(e))?;
         let mut value = String::new();
         io::stdin().read_line(&mut value)?;
+        value = value.trim().to_string();
         Ok(Self { key, value })
     }
 
@@ -62,7 +63,7 @@ impl Metadata {
     pub fn add_to_args(&self, args: &mut Vec<String>) {
         if !self.value.is_empty() {
             args.push("-metadata".to_string());
-            args.push(format!("{}={}", self.key.trim(), self.value.trim()));
+            args.push(format!("{}={}", self.key, self.value));
         }
     }
 }
